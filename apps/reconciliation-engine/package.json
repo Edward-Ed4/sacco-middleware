@@ -1,0 +1,21 @@
+{
+  "name": "@sacco/reconciliation-engine",
+  "version": "1.0.0",
+  "description": "Scheduled engine that detects modified, deleted and unanchored SACCO transactions",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js"
+  },
+  "dependencies": {
+    "@sacco/shared": "*",
+    "dotenv": "16.4.5",
+    "node-cron": "3.0.3",
+    "nodemailer": "6.9.13",
+    "pg": "8.11.5",
+    "winston": "3.13.0"
+  },
+  "devDependencies": {
+    "nodemon": "3.1.0"
+  }
+}
