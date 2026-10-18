@@ -1,0 +1,110 @@
+version: '3.8'
+
+services:
+  # PostgreSQL - off-chain store
+  postgres:
+    image: postgres:15-alpine
+    container_name: sacco_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: sacco_middleware
+      POSTGRES_USER: sacco_user
+      POSTGRES_PASSWORD: sacco_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infra/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  # Redis - durable queue (Redis Streams)
+  redis:
+    image: redis:7-alpine
+    container_name: sacco_redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  # Hyperledger Besu - Validator 1 (Regulator / UMRA)
+  besu-validator1:
+    image: hyperledger/besu:latest
+    container_name: besu_validator1
+    restart: unless-stopped
+    volumes:
+      - ./infra/besu/validator1:/config
+      - besu_v1_data:/data
+    command: >
+      --config-file=/config/config.toml
+      --data-path=/data
+    ports:
+      - "30303:30303"
+      - "8545:8545"
+    depends_on: []
+
+  # Hyperledger Besu - Validator 2 (Ministry / MTIC)
+  besu-validator2:
+    image: hyperledger/besu:latest
+    container_name: besu_validator2
+    restart: unless-stopped
+    volumes:
+      - ./infra/besu/validator2:/config
+      - besu_v2_data:/data
+    command: >
+      --config-file=/config/config.toml
+      --data-path=/data
+    ports:
+      - "30304:30303"
+
+  # Hyperledger Besu - Validator 3 (SACCO Apex Union)
+  besu-validator3:
+    image: hyperledger/besu:latest
+    container_name: besu_validator3
+    restart: unless-stopped
+    volumes:
+      - ./infra/besu/validator3:/config
+      - besu_v3_data:/data
+    command: >
+      --config-file=/config/config.toml
+      --data-path=/data
+    ports:
+      - "30305:30303"
+
+  # Hyperledger Besu - Validator 4 (Independent Auditor)
+  besu-validator4:
+    image: hyperledger/besu:latest
+    container_name: besu_validator4
+    restart: unless-stopped
+    volumes:
+      - ./infra/besu/validator4:/config
+      - besu_v4_data:/data
+    command: >
+      --config-file=/config/config.toml
+      --data-path=/data
+    ports:
+      - "30306:30303"
+
+  # Hyperledger Besu - Read-only RPC node (non-validator)
+  besu-rpc:
+    image: hyperledger/besu:latest
+    container_name: besu_rpc
+    restart: unless-stopped
+    volumes:
+      - ./infra/besu/rpc-node:/config
+      - besu_rpc_data:/data
+    command: >
+      --config-file=/config/config.toml
+      --data-path=/data
+    ports:
+      - "8546:8545"
+      - "8547:8546"
+
+volumes:
+  postgres_data:
+  redis_data:
+  besu_v1_data:
+  besu_v2_data:
+  besu_v3_data:
+  besu_v4_data:
+  besu_rpc_data:

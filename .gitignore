@@ -1,0 +1,16 @@
+node_modules/
+dist/
+build/
+.env
+.env.*
+!.env.example
+*.log
+coverage/
+.flutter-plugins
+.flutter-plugins-dependencies
+.dart_tool/
+flutter/build/
+infra/besu/validator*/data/
+infra/besu/rpc-node/data/
+*.key
+*.pem

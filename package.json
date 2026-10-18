@@ -1,0 +1,22 @@
+{
+  "name": "sacco-middleware",
+  "version": "1.0.0",
+  "description": "Asynchronous blockchain middleware plug-in for mitigating insider fraud in Ugandan SACCO databases",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:gateway": "npm run dev --workspace=apps/api-gateway",
+    "dev:anchor": "npm run dev --workspace=apps/anchor-worker",
+    "dev:reconcile": "npm run dev --workspace=apps/reconciliation-engine",
+    "dev:sms": "npm run dev --workspace=apps/sms-verification",
+    "dev:dashboard": "npm run dev --workspace=apps/dashboard",
+    "build": "npm run build --workspaces",
+    "test": "npm run test --workspaces --if-present"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

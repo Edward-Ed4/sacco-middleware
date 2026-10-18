@@ -1,0 +1,14 @@
+{
+  "name": "@sacco/shared",
+  "version": "1.0.0",
+  "description": "Shared cryptographic utilities for SACCO middleware",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "node --test"
+  },
+  "dependencies": {
+    "@noble/ed25519": "2.1.0",
+    "base32-encode": "2.0.0",
+    "base32-decode": "1.0.0"
+  }
+}
