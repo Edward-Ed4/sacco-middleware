@@ -1,0 +1,46 @@
+name: sacco_verify
+description: SACCO Middleware member verification app - QR and SMS receipt verification
+
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # QR code scanning
+  mobile_scanner: ^3.5.6
+
+  # QR code generation (for display)
+  qr_flutter: ^4.1.0
+
+  # HTTP client
+  http: ^1.2.1
+
+  # Secure local storage (for caching receipts)
+  flutter_secure_storage: ^9.0.0
+
+  # State management
+  provider: ^6.1.2
+
+  # URL launcher
+  url_launcher: ^6.2.5
+
+  # Icons
+  cupertino_icons: ^1.0.6
+
+  # Crypto (pure Dart)
+  pointycastle: ^3.7.4
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
