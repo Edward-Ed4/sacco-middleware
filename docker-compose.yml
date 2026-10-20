@@ -1,55 +1,67 @@
 version: '3.8'
 
 services:
-  # PostgreSQL - off-chain store
+  # ── Infrastructure ───────────────────────────────────────────────────────────
+
   postgres:
     image: postgres:15-alpine
     container_name: sacco_postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: sacco_middleware
-      POSTGRES_USER: sacco_user
+      POSTGRES_DB:       sacco_middleware
+      POSTGRES_USER:     sacco_user
       POSTGRES_PASSWORD: sacco_pass
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./infra/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./infra/postgres/init.sql:/docker-entrypoint-initdb.d/01-init.sql
+      - ./infra/postgres/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sacco_user -d sacco_middleware"]
+      interval: 5s
+      timeout:  5s
+      retries:  10
 
-  # Redis - durable queue (Redis Streams)
   redis:
     image: redis:7-alpine
     container_name: sacco_redis
     restart: unless-stopped
-    command: redis-server --appendonly yes
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
     ports:
       - "6379:6379"
     volumes:
       - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout:  3s
+      retries:  10
 
-  # Hyperledger Besu - Validator 1 (Regulator / UMRA)
+  # ── Besu QBFT Network ────────────────────────────────────────────────────────
+
   besu-validator1:
     image: hyperledger/besu:latest
     container_name: besu_validator1
     restart: unless-stopped
     volumes:
       - ./infra/besu/validator1:/config
+      - ./infra/besu/genesis.json:/config/genesis.json
       - besu_v1_data:/data
     command: >
       --config-file=/config/config.toml
       --data-path=/data
     ports:
-      - "30303:30303"
       - "8545:8545"
-    depends_on: []
+      - "30303:30303"
 
-  # Hyperledger Besu - Validator 2 (Ministry / MTIC)
   besu-validator2:
     image: hyperledger/besu:latest
     container_name: besu_validator2
     restart: unless-stopped
     volumes:
       - ./infra/besu/validator2:/config
+      - ./infra/besu/genesis.json:/config/genesis.json
       - besu_v2_data:/data
     command: >
       --config-file=/config/config.toml
@@ -57,13 +69,13 @@ services:
     ports:
       - "30304:30303"
 
-  # Hyperledger Besu - Validator 3 (SACCO Apex Union)
   besu-validator3:
     image: hyperledger/besu:latest
     container_name: besu_validator3
     restart: unless-stopped
     volumes:
       - ./infra/besu/validator3:/config
+      - ./infra/besu/genesis.json:/config/genesis.json
       - besu_v3_data:/data
     command: >
       --config-file=/config/config.toml
@@ -71,13 +83,13 @@ services:
     ports:
       - "30305:30303"
 
-  # Hyperledger Besu - Validator 4 (Independent Auditor)
   besu-validator4:
     image: hyperledger/besu:latest
     container_name: besu_validator4
     restart: unless-stopped
     volumes:
       - ./infra/besu/validator4:/config
+      - ./infra/besu/genesis.json:/config/genesis.json
       - besu_v4_data:/data
     command: >
       --config-file=/config/config.toml
@@ -85,13 +97,13 @@ services:
     ports:
       - "30306:30303"
 
-  # Hyperledger Besu - Read-only RPC node (non-validator)
   besu-rpc:
     image: hyperledger/besu:latest
     container_name: besu_rpc
     restart: unless-stopped
     volumes:
       - ./infra/besu/rpc-node:/config
+      - ./infra/besu/genesis.json:/config/genesis.json
       - besu_rpc_data:/data
     command: >
       --config-file=/config/config.toml
@@ -99,6 +111,82 @@ services:
     ports:
       - "8546:8545"
       - "8547:8546"
+
+  # ── Application Services ─────────────────────────────────────────────────────
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: apps/api-gateway/Dockerfile
+    container_name: sacco_api_gateway
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      PORT:         3000
+      DATABASE_URL: postgresql://sacco_user:sacco_pass@postgres:5432/sacco_middleware
+      REDIS_URL:    redis://redis:6379
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis:    { condition: service_healthy }
+
+  anchor-worker:
+    build:
+      context: .
+      dockerfile: apps/anchor-worker/Dockerfile
+    container_name: sacco_anchor_worker
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://sacco_user:sacco_pass@postgres:5432/sacco_middleware
+      REDIS_URL:    redis://redis:6379
+      BESU_RPC_URL: http://besu-rpc:8545
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis:    { condition: service_healthy }
+
+  reconciliation-engine:
+    build:
+      context: .
+      dockerfile: apps/reconciliation-engine/Dockerfile
+    container_name: sacco_reconciliation
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://sacco_user:sacco_pass@postgres:5432/sacco_middleware
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  sms-verification:
+    build:
+      context: .
+      dockerfile: apps/sms-verification/Dockerfile
+    container_name: sacco_sms_verification
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://sacco_user:sacco_pass@postgres:5432/sacco_middleware
+      SMS_PORT:     3002
+    ports:
+      - "3002:3002"
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  dashboard:
+    build:
+      context: .
+      dockerfile: apps/dashboard/Dockerfile
+    container_name: sacco_dashboard
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL:    postgresql://sacco_user:sacco_pass@postgres:5432/sacco_middleware
+      DASHBOARD_PORT:  3003
+    ports:
+      - "3003:3003"
+    depends_on:
+      postgres: { condition: service_healthy }
 
 volumes:
   postgres_data:
