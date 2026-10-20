@@ -1,0 +1,66 @@
+/* SACCO Middleware Dashboard — additional styles */
+
+/* Smooth transitions */
+.section { transition: box-shadow 0.2s ease; }
+.section:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+
+/* Table row hover */
+tr { transition: background 0.1s ease; }
+
+/* Badge animations */
+.badge { transition: opacity 0.2s ease; }
+
+/* Stat card number animation */
+.stat-card .value {
+  transition: color 0.3s ease;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Responsive table wrapper */
+@media (max-width: 768px) {
+  main { padding: 1rem; }
+  .stat-grid { grid-template-columns: repeat(2, 1fr); }
+  table { font-size: .75rem; }
+  th, td { padding: .5rem .6rem; }
+  nav button { padding: .6rem .8rem; font-size: .8rem; }
+}
+
+/* Loading spinner */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+.spinner {
+  width: 20px; height: 20px;
+  border: 2px solid #e2e8f0;
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: inline-block;
+}
+
+/* Hash truncation with tooltip */
+.mono[title] {
+  cursor: help;
+  text-decoration: underline dotted;
+}
+
+/* Alert pulse for danger findings */
+.badge.MODIFIED, .badge.DELETED {
+  animation: pulse 2s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.6; }
+}
+
+/* Section header sticky */
+.section-header { position: sticky; top: 0; background: white; z-index: 1; }
+
+/* Empty state */
+.empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--muted);
+}
+.empty-state svg { margin-bottom: 1rem; opacity: .4; }
