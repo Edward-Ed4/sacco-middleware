@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SACCO Middleware — Auditor Dashboard</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --primary:   #1a56db;
+      --danger:    #e02424;
+      --warning:   #ff8800;
+      --success:   #057a55;
+      --bg:        #f4f6fb;
+      --card:      #ffffff;
+      --border:    #e2e8f0;
+      --text:      #1a202c;
+      --muted:     #718096;
+    }
+
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); }
+
+    header {
+      background: var(--primary); color: #fff;
+      padding: 1rem 2rem; display: flex; align-items: center; justify-content: space-between;
+    }
+    header h1 { font-size: 1.25rem; font-weight: 700; }
+    header span { font-size: .85rem; opacity: .8; }
+
+    nav {
+      background: #fff; border-bottom: 1px solid var(--border);
+      display: flex; gap: 0; padding: 0 2rem;
+    }
+    nav button {
+      background: none; border: none; border-bottom: 3px solid transparent;
+      padding: .75rem 1.25rem; cursor: pointer; font-size: .9rem; color: var(--muted);
+      transition: color .15s, border-color .15s;
+    }
+    nav button.active, nav button:hover { color: var(--primary); border-bottom-color: var(--primary); }
+
+    main { padding: 2rem; max-width: 1400px; margin: 0 auto; }
+
+    .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+    .stat-card {
+      background: var(--card); border-radius: 8px; padding: 1.25rem 1.5rem;
+      border: 1px solid var(--border); box-shadow: 0 1px 3px rgba(0,0,0,.06);
+    }
+    .stat-card .label { font-size: .8rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+    .stat-card .value { font-size: 2rem; font-weight: 700; margin-top: .25rem; }
+    .stat-card.danger .value { color: var(--danger); }
+    .stat-card.warning .value { color: var(--warning); }
+    .stat-card.success .value { color: var(--success); }
+
+    .section { background: var(--card); border-radius: 8px; border: 1px solid var(--border); margin-bottom: 1.5rem; overflow: hidden; }
+    .section-header { padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+    .section-header h2 { font-size: 1rem; font-weight: 600; }
+    .refresh-btn {
+      background: var(--primary); color: #fff; border: none; border-radius: 4px;
+      padding: .4rem .9rem; cursor: pointer; font-size: .8rem;
+    }
+    .refresh-btn:hover { opacity: .9; }
+
+    table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+    th { background: var(--bg); padding: .75rem 1rem; text-align: left; font-size: .75rem; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--border); }
+    td { padding: .75rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--bg); }
+
+    .badge {
+      display: inline-block; padding: .2rem .6rem; border-radius: 999px;
+      font-size: .75rem; font-weight: 600;
+    }
+    .badge.ANCHORED, .badge.VALID   { background: #def7ec; color: var(--success); }
+    .badge.PENDING                  { background: #fef3c7; color: #92400e; }
+    .badge.MODIFIED, .badge.DELETED { background: #fde8e8; color: var(--danger); }
+    .badge.UNANCHORED               { background: #feecdc; color: var(--warning); }
+
+    .mono { font-family: 'Courier New', monospace; font-size: .8rem; word-break: break-all; }
+    .muted { color: var(--muted); }
+    .hidden { display: none; }
+
+    #loading { text-align: center; padding: 3rem; color: var(--muted); font-size: .95rem; }
+    #error-msg { background: #fde8e8; color: var(--danger); padding: 1rem 1.5rem; border-radius: 6px; margin-bottom: 1rem; display: none; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🔐 SACCO Middleware — Auditor &amp; Regulator Dashboard</h1>
+  <span id="last-refresh">Loading...</span>
+</header>
+
+<nav>
+  <button class="active" onclick="showTab('overview')">Overview</button>
+  <button onclick="showTab('findings')">Findings</button>
+  <button onclick="showTab('batches')">Anchor Batches</button>
+  <button onclick="showTab('reconciliation')">Reconciliation</button>
+  <button onclick="showTab('alerts')">Alerts</button>
+  <button onclick="showTab('tenants')">Tenants</button>
+</nav>
+
+<main>
+  <div id="error-msg"></div>
+
+  <!-- OVERVIEW TAB -->
+  <div id="tab-overview">
+    <div class="stat-grid" id="stat-grid">
+      <div class="stat-card"><div class="label">Total Commitments</div><div class="value" id="s-total">—</div></div>
+      <div class="stat-card success"><div class="label">Anchored</div><div class="value" id="s-anchored">—</div></div>
+      <div class="stat-card warning"><div class="label">Pending</div><div class="value" id="s-pending">—</div></div>
+      <div class="stat-card"><div class="label">Anchor Batches</div><div class="value" id="s-batches">—</div></div>
+      <div class="stat-card danger"><div class="label">Modified Records</div><div class="value" id="s-modified">—</div></div>
+      <div class="stat-card danger"><div class="label">Deleted Records</div><div class="value" id="s-deleted">—</div></div>
+      <div class="stat-card warning"><div class="label">Unanchored</div><div class="value" id="s-unanchored">—</div></div>
+      <div class="stat-card warning"><div class="label">Pending Alerts</div><div class="value" id="s-alerts">—</div></div>
+    </div>
+
+    <div class="section">
+      <div class="section-header">
+        <h2>Recent Findings</h2>
+        <button class="refresh-btn" onclick="loadAll()">↻ Refresh</button>
+      </div>
+      <table id="findings-table-overview">
+        <thead><tr><th>Tenant</th><th>Tx Ref</th><th>Finding</th><th>Time</th></tr></thead>
+        <tbody id="findings-body-overview"><tr><td colspan="4" class="muted" style="text-align:center">Loading...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- FINDINGS TAB -->
+  <div id="tab-findings" class="hidden">
+    <div class="section">
+      <div class="section-header"><h2>All Reconciliation Findings</h2><button class="refresh-btn" onclick="loadFindings()">↻ Refresh</button></div>
+      <table>
+        <thead><tr><th>Tenant</th><th>Tx Ref</th><th>Finding</th><th>Detail</th><th>Alerted</th><th>Time</th></tr></thead>
+        <tbody id="findings-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- BATCHES TAB -->
+  <div id="tab-batches" class="hidden">
+    <div class="section">
+      <div class="section-header"><h2>Anchor Batches (Blockchain)</h2><button class="refresh-btn" onclick="loadBatches()">↻ Refresh</button></div>
+      <table>
+        <thead><tr><th>Tenant</th><th>Merkle Root</th><th>Seq Range</th><th>Block</th><th>Tx Hash</th><th>Anchored At</th></tr></thead>
+        <tbody id="batches-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- RECONCILIATION TAB -->
+  <div id="tab-reconciliation" class="hidden">
+    <div class="section">
+      <div class="section-header"><h2>Reconciliation Run History</h2><button class="refresh-btn" onclick="loadReconciliation()">↻ Refresh</button></div>
+      <table>
+        <thead><tr><th>Tenant</th><th>Run At</th><th>Checked</th><th>Valid</th><th>Modified</th><th>Deleted</th><th>Unanchored</th></tr></thead>
+        <tbody id="reconciliation-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ALERTS TAB -->
+  <div id="tab-alerts" class="hidden">
+    <div class="section">
+      <div class="section-header"><h2>Alert Log</h2><button class="refresh-btn" onclick="loadAlerts()">↻ Refresh</button></div>
+      <table>
+        <thead><tr><th>Tenant</th><th>Channel</th><th>Status</th><th>Message</th><th>Sent At</th></tr></thead>
+        <tbody id="alerts-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- TENANTS TAB -->
+  <div id="tab-tenants" class="hidden">
+    <div class="section">
+      <div class="section-header"><h2>Registered Tenants</h2><button class="refresh-btn" onclick="loadTenants()">↻ Refresh</button></div>
+      <table>
+        <thead><tr><th>ID</th><th>Name</th><th>Active</th><th>Created</th></tr></thead>
+        <tbody id="tenants-body"></tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<script>
+const tabs = ['overview','findings','batches','reconciliation','alerts','tenants'];
+
+function showTab(name) {
+  tabs.forEach(t => {
+    document.getElementById('tab-' + t).classList.toggle('hidden', t !== name);
+  });
+  document.querySelectorAll('nav button').forEach((btn, i) => {
+    btn.classList.toggle('active', tabs[i] === name);
+  });
+  if (name === 'findings')       loadFindings();
+  if (name === 'batches')        loadBatches();
+  if (name === 'reconciliation') loadReconciliation();
+  if (name === 'alerts')         loadAlerts();
+  if (name === 'tenants')        loadTenants();
+}
+
+async function fetchJSON(url) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+function showError(msg) {
+  const el = document.getElementById('error-msg');
+  el.textContent = msg;
+  el.style.display = 'block';
+  setTimeout(() => { el.style.display = 'none'; }, 6000);
+}
+
+function badge(status) {
+  return `<span class="badge ${status}">${status}</span>`;
+}
+
+function shortHash(h) {
+  return h ? `<span class="mono" title="${h}">${h.substring(0,10)}…</span>` : '—';
+}
+
+function fmtTime(ts) {
+  if (!ts) return '—';
+  return new Date(ts).toLocaleString();
+}
+
+async function loadStats() {
+  try {
+    const d = await fetchJSON('/api/stats');
+    document.getElementById('s-total').textContent    = d.commitments.total;
+    document.getElementById('s-anchored').textContent = d.commitments.anchored;
+    document.getElementById('s-pending').textContent  = d.commitments.pending;
+    document.getElementById('s-batches').textContent  = d.batches.total;
+    document.getElementById('s-modified').textContent = d.findings.modified;
+    document.getElementById('s-deleted').textContent  = d.findings.deleted;
+    document.getElementById('s-unanchored').textContent = d.findings.unanchored;
+    document.getElementById('s-alerts').textContent   = d.alerts.pending_alerts;
+    document.getElementById('last-refresh').textContent = 'Last refresh: ' + new Date().toLocaleTimeString();
+  } catch (err) { showError('Stats: ' + err.message); }
+}
+
+async function loadFindingsOverview() {
+  try {
+    const rows = await fetchJSON('/api/findings?limit=10');
+    const tbody = document.getElementById('findings-body-overview');
+    if (!rows.length) { tbody.innerHTML = '<tr><td colspan="4" class="muted" style="text-align:center">No findings</td></tr>'; return; }
+    tbody.innerHTML = rows.map(r => `
+      <tr>
+        <td>${r.tenant_name}</td>
+        <td class="mono">${r.tx_ref}</td>
+        <td>${badge(r.finding)}</td>
+        <td class="muted">${fmtTime(r.created_at)}</td>
+      </tr>`).join('');
+  } catch (err) { showError('Findings: ' + err.message); }
+}
+
+async function loadFindings() {
+  try {
+    const rows = await fetchJSON('/api/findings?limit=100');
+    const tbody = document.getElementById('findings-body');
+    if (!rows.length) { tbody.innerHTML = '<tr><td colspan="6" class="muted" style="text-align:center">No findings</td></tr>'; return; }
+    tbody.innerHTML = rows.map(r => `
+      <tr>
+        <td>${r.tenant_name}</td>
+        <td class="mono">${r.tx_ref}</td>
+        <td>${badge(r.finding)}</td>
+        <td class="mono" style="font-size:.75rem">${JSON.stringify(r.detail || {})}</td>
+        <td>${r.alerted ? '✅' : '⏳'}</td>
+        <td class="muted">${fmtTime(r.created_at)}</td>
+      </tr>`).join('');
+  } catch (err) { showError('Findings: ' + err.message); }
+}
+
+async function loadBatches() {
+  try {
+    const rows = await fetchJSON('/api/batches');
+    const tbody = document.getElementById('batches-body');
+    if (!rows.length) { tbody.innerHTML = '<tr><td colspan="6" class="muted" style="text-align:center">No batches yet</td></tr>'; return; }
+    tbody.innerHTML = rows.map(r => `
+      <tr>
+        <td>${r.tenant_name}</td>
+        <td>${shortHash(r.merkle_root)}</td>
+        <td>${r.seq_start} – ${r.seq_end}</td>
+        <td>${r.block_number || '—'}</td>
+        <td>${shortHash(r.tx_hash)}</td>
+        <td class="muted">${fmtTime(r.anchored_at)}</td>
+      </tr>`).join('');
+  } catch (err) { showError('Batches: ' + err.message); }
+}
+
+async function loadReconciliation() {
+  try {
+    const rows = await fetchJSON('/api/reconciliation');
+    const tbody = document.getElementById('reconciliation-body');
+    if (!rows.length) { tbody.innerHTML = '<tr><td colspan="7" class="muted" style="text-align:center">No runs yet</td></tr>'; return; }
+    tbody.innerHTML = rows.map(r => `
+      <tr>
+        <td>${r.tenant_name}</td>
+        <td class="muted">${fmtTime(r.run_at)}</td>
+        <td>${r.total_checked}</td>
+        <td style="color:var(--success)">${r.valid_count}</td>
+        <td style="color:var(--danger)">${r.modified_count}</td>
+        <td style="color:var(--danger)">${r.deleted_count}</td>
+        <td style="color:var(--warning)">${r.unanchored_count}</td>
+      </tr>`).join('');
+  } catch (err) { showError('Reconciliation: ' + err.message); }
+}
+
+async function loadAlerts() {
+  try {
+    const rows = await fetchJSON('/api/alerts');
+    const tbody = document.getElementById('alerts-body');
+    if (!rows.length) { tbody.innerHTML = '<tr><td colspan="5" class="muted" style="text-align:center">No alerts</td></tr>'; return; }
+    tbody.innerHTML = rows.map(r => `
+      <tr>
+        <td>${r.tenant_name}</td>
+        <td>${r.channel}</td>
+        <td>${badge(r.status)}</td>
+        <td style="font-size:.8rem;max-width:400px;white-space:pre-wrap">${r.message.substring(0, 120)}…</td>
+        <td class="muted">${fmtTime(r.sent_at)}</td>
+      </tr>`).join('');
+  } catch (err) { showError('Alerts: ' + err.message); }
+}
+
+async function loadTenants() {
+  try {
+    const rows = await fetchJSON('/api/tenants');
+    const tbody = document.getElementById('tenants-body');
+    if (!rows.length) { tbody.innerHTML = '<tr><td colspan="4" class="muted" style="text-align:center">No tenants registered</td></tr>'; return; }
+    tbody.innerHTML = rows.map(r => `
+      <tr>
+        <td class="mono">${r.id}</td>
+        <td>${r.name}</td>
+        <td>${r.active ? '✅ Active' : '❌ Inactive'}</td>
+        <td class="muted">${fmtTime(r.created_at)}</td>
+      </tr>`).join('');
+  } catch (err) { showError('Tenants: ' + err.message); }
+}
+
+async function loadAll() {
+  await loadStats();
+  await loadFindingsOverview();
+}
+
+// Auto-refresh every 30 seconds
+loadAll();
+setInterval(loadAll, 30000);
+</script>
+</body>
+</html>
