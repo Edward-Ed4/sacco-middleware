@@ -1,25 +1,27 @@
 'use strict';
 
-const Redis   = require('ioredis');
+const Redis    = require('ioredis');
 const { Pool } = require('pg');
 const { ethers } = require('ethers');
 const { v4: uuidv4 } = require('uuid');
-const { buildTree, generateProof } = require('@sacco/shared');
-const logger  = require('./logger');
+const { buildBatch, uuidToBytes32 } = require('./batchBuilder');
+const logger   = require('./logger');
 
 const STREAM         = 'sacco:anchor:queue';
 const CONSUMER_GROUP = 'anchor-workers';
 const CONSUMER_NAME  = 'worker-1';
-const BATCH_SIZE     = Number(process.env.ANCHOR_BATCH_SIZE)     || 50;
+const BATCH_SIZE     = Number(process.env.ANCHOR_BATCH_SIZE)      || 50;
 const INTERVAL_MS    = Number(process.env.ANCHOR_INTERVAL_SECONDS || 15) * 1000;
 
-// AnchorRegistry ABI — only the functions we need
 const ANCHOR_ABI = [
   'function anchor(bytes32 batchId, bytes32 merkleRoot, uint64 seqStart, uint64 seqEnd) external',
   'event BatchAnchored(bytes32 indexed batchId, bytes32 indexed merkleRoot, uint64 seqStart, uint64 seqEnd, address submitter)',
 ];
 
 async function startWorker() {
+  // Start health check server
+  require('./healthcheck');
+
   const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
   const pool  = new Pool({ connectionString: process.env.DATABASE_URL });
 
@@ -33,20 +35,18 @@ async function startWorker() {
   }
 
   // Set up ethers provider + signer
-  const provider = new ethers.JsonRpcProvider(process.env.BESU_RPC_URL || 'http://localhost:8545');
-  let contract   = null;
-
+  let contract = null;
   if (process.env.ANCHOR_CONTRACT_ADDRESS && process.env.DEPLOYER_PRIVATE_KEY) {
-    const wallet = new ethers.Wallet(process.env.DEPLOYER_PRIVATE_KEY, provider);
+    const provider = new ethers.JsonRpcProvider(process.env.BESU_RPC_URL || 'http://localhost:8545');
+    const wallet   = new ethers.Wallet(process.env.DEPLOYER_PRIVATE_KEY, provider);
     contract = new ethers.Contract(process.env.ANCHOR_CONTRACT_ADDRESS, ANCHOR_ABI, wallet);
     logger.info('AnchorRegistry contract loaded', { address: process.env.ANCHOR_CONTRACT_ADDRESS });
   } else {
-    logger.warn('ANCHOR_CONTRACT_ADDRESS or DEPLOYER_PRIVATE_KEY not set — running in dry-run mode');
+    logger.warn('Running in DRY-RUN mode — blockchain anchoring disabled');
   }
 
-  logger.info('Anchor worker ready. Polling stream...', { stream: STREAM, batchSize: BATCH_SIZE, intervalMs: INTERVAL_MS });
+  logger.info('Anchor worker ready', { stream: STREAM, batchSize: BATCH_SIZE, intervalMs: INTERVAL_MS });
 
-  // Main loop
   while (true) {
     try {
       await processBatch(redis, pool, contract);
@@ -58,7 +58,6 @@ async function startWorker() {
 }
 
 async function processBatch(redis, pool, contract) {
-  // Read up to BATCH_SIZE messages from the stream
   const results = await redis.xreadgroup(
     'GROUP', CONSUMER_GROUP, CONSUMER_NAME,
     'COUNT', BATCH_SIZE,
@@ -66,57 +65,57 @@ async function processBatch(redis, pool, contract) {
     'STREAMS', STREAM, '>'
   );
 
-  if (!results || results.length === 0) return;
+  if (!results || !results.length) return;
 
   const [, messages] = results[0];
-  if (!messages || messages.length === 0) return;
+  if (!messages || !messages.length) return;
 
   logger.info(`Processing batch of ${messages.length} commitments`);
 
-  // Parse messages
+  // Parse stream messages
   const items = messages.map(([streamId, fields]) => {
     const obj = {};
     for (let i = 0; i < fields.length; i += 2) obj[fields[i]] = fields[i + 1];
     return { streamId, ...obj };
   });
 
-  // Build Merkle tree from leaf hashes
-  const leaves   = items.map(it => Buffer.from(it.leafHex, 'hex'));
-  const { root, layers } = buildTree(leaves);
-  const rootHex  = root.toString('hex');
-
+  // Build Merkle tree using the batch builder
+  const batch    = buildBatch(items);
   const batchId  = uuidv4();
   const seqStart = Math.min(...items.map(it => Number(it.sequenceNo)));
   const seqEnd   = Math.max(...items.map(it => Number(it.sequenceNo)));
 
-  logger.info('Merkle tree built', { batchId, rootHex: rootHex.substring(0, 16) + '...', seqStart, seqEnd });
+  logger.info('Merkle tree built', {
+    batchId,
+    rootHex:  batch.rootHex.substring(0, 16) + '...',
+    count:    batch.count,
+    seqStart, seqEnd,
+  });
 
   // Anchor on blockchain
   let txHash = null;
-  let blockNumber = null;
+  let blockNumber = 0;
 
   if (contract) {
     try {
-      const batchIdBytes32 = '0x' + Buffer.from(batchId.replace(/-/g, ''), 'hex').toString('hex').padEnd(64, '0');
-      const rootBytes32    = '0x' + rootHex;
+      const batchIdBytes32 = uuidToBytes32(batchId);
+      const rootBytes32    = '0x' + batch.rootHex;
       const tx = await contract.anchor(batchIdBytes32, rootBytes32, seqStart, seqEnd);
       const receipt = await tx.wait();
       txHash      = receipt.hash;
       blockNumber = receipt.blockNumber;
       logger.info('Batch anchored on chain', { txHash, blockNumber });
     } catch (err) {
-      logger.error('Blockchain anchor failed', { err: err.message });
-      // Don't ACK — will retry on next cycle
-      return;
+      logger.error('Blockchain anchor failed — will retry', { err: err.message });
+      return; // Don't ACK — retry on next cycle
     }
   } else {
-    // Dry-run: simulate anchoring
-    txHash      = '0x' + Buffer.alloc(32).toString('hex');
+    txHash      = '0x' + Buffer.alloc(32, 0).toString('hex');
     blockNumber = 0;
-    logger.info('DRY-RUN: simulated anchor', { batchId });
+    logger.info('DRY-RUN: anchor simulated', { batchId });
   }
 
-  // Persist batch and update commitments in DB
+  // Update DB
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -126,25 +125,20 @@ async function processBatch(redis, pool, contract) {
        VALUES ($1,
          (SELECT tenant_id FROM commitments WHERE receipt_id = $2 LIMIT 1),
          $3, $4, $5, $6, $7, NOW())`,
-      [batchId, items[0].receiptId, rootHex, seqStart, seqEnd, txHash, blockNumber]
+      [batchId, items[0].receiptId, batch.rootHex, seqStart, seqEnd, txHash, blockNumber]
     );
 
-    // Update each commitment with proof, batch reference, block number
     for (let i = 0; i < items.length; i++) {
-      const proof = generateProof(layers, i);
       await client.query(
         `UPDATE commitments
-         SET status = 'ANCHORED',
-             batch_id = $1,
-             merkle_proof = $2,
-             block_number = $3
+         SET status = 'ANCHORED', batch_id = $1, merkle_proof = $2, block_number = $3
          WHERE receipt_id = $4`,
-        [batchId, JSON.stringify(proof), blockNumber, items[i].receiptId]
+        [batchId, JSON.stringify(batch.proofs[i].proof), blockNumber, items[i].receiptId]
       );
     }
 
     await client.query('COMMIT');
-    logger.info('DB updated for batch', { batchId, count: items.length });
+    logger.info('DB updated', { batchId, count: items.length });
   } catch (err) {
     await client.query('ROLLBACK');
     logger.error('DB update failed', { err: err.message });
@@ -153,14 +147,12 @@ async function processBatch(redis, pool, contract) {
     client.release();
   }
 
-  // ACK all messages
+  // ACK messages
   const streamIds = messages.map(([id]) => id);
   await redis.xack(STREAM, CONSUMER_GROUP, ...streamIds);
   logger.info('Stream messages ACKed', { count: streamIds.length });
 }
 
-function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 module.exports = { startWorker };
