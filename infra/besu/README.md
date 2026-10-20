@@ -1,164 +1,94 @@
-# Hyperledger Besu — QBFT Network
+# Hyperledger Besu QBFT Network
 
 ## Overview
 
-This directory contains the configuration for a permissioned **QBFT** (Quorum Byzantine Fault Tolerant) blockchain network running on Hyperledger Besu. The network consists of **4 validator nodes** and **1 read-only RPC node**, all running as Docker containers defined in `docker-compose.yml`.
+This directory contains configuration for a 4-validator private QBFT network plus one read-only RPC node. Each validator is intended to be hosted by a different independent institution to prevent any single party from rewriting anchored history.
 
----
+| Node | Role | Institution |
+|------|------|-------------|
+| validator1 | QBFT Validator | UMRA (Regulator) |
+| validator2 | QBFT Validator | MTIC (Ministry) |
+| validator3 | QBFT Validator | SACCO Apex Union |
+| validator4 | QBFT Validator | Independent Auditor |
+| rpc-node   | Read-only RPC  | Public / App layer |
 
 ## How QBFT Works
 
-QBFT is a BFT consensus protocol adapted for Ethereum-compatible chains:
+QBFT (Quorum Byzantine Fault Tolerant) is a Byzantine fault-tolerant consensus algorithm with **immediate finality** — once a block is committed, it cannot be reversed.
 
-- **Immediate finality** — once a block is added, it is final. There are no forks and no reorgs.
-- **Round-based proposer rotation** — validators take turns proposing blocks in a round-robin fashion each epoch.
-- **Fault tolerance** — a network of `N` validators can tolerate up to `f = ⌊(N−1)/3⌋` faulty (Byzantine) nodes while still reaching consensus. With 4 validators, `f = 1`, meaning **one validator can fail or misbehave** and the network continues producing blocks.
-- **Liveness** — requires at least `2f + 1 = 3` validators to be online and honest to produce blocks.
-- **Block period** — set to **2 seconds** in this network (`blockperiodseconds: 2`).
-- **Request timeout** — **4 seconds** (`requesttimeoutseconds: 4`); if a proposer does not deliver a block in time, validators move to the next round.
+- With 4 validators, the network tolerates **1 faulty node** (⌊(4-1)/3⌋ = 1)
+- Blocks finalise in ~2 seconds (`blockperiodseconds: 2`)
+- No mining — validators take turns proposing blocks
 
-### Why QBFT for SACCO?
+This means even if one validator is compromised or offline, the other three continue producing blocks and maintaining the immutable anchor history.
 
-The four validators represent distinct governance bodies, each with an independent interest in data integrity:
+## First-time Setup
 
-| Validator | Role |
-|-----------|------|
-| **Validator 1** | UMRA — Regulatory authority |
-| **Validator 2** | MTIC — Ministry of Trade, Industry and Cooperatives |
-| **Validator 3** | SACCO Apex Union — Industry self-regulator |
-| **Validator 4** | Independent Auditor — External assurance |
-
-No single party controls block production. A coalition of at least 3 must agree for any Merkle root to be anchored on-chain.
-
----
-
-## Directory Structure
-
-```
-infra/besu/
-├── genesis.json          # Shared QBFT genesis block (chainId 1337)
-├── generate-keys.js      # Script to create validator private key files
-├── README.md             # This file
-├── validator1/
-│   ├── config.toml       # Besu config for Validator 1
-│   └── key               # secp256k1 private key (32-byte hex, no 0x)
-├── validator2/
-│   ├── config.toml
-│   └── key
-├── validator3/
-│   ├── config.toml
-│   └── key
-├── validator4/
-│   ├── config.toml
-│   └── key
-└── rpc-node/
-    ├── config.toml       # Non-validator, sync-mode=FULL, read-only RPC
-    └── (no key file)
-```
-
----
-
-## First-Time Setup
-
-### 1. Generate validator keys
+### Step 1 — Generate validator keys
 
 ```bash
 node infra/besu/generate-keys.js
 ```
 
-This writes a random 32-byte hex private key to each `validatorN/key` file.
-It also prints the Ethereum address for each validator — you will need these
-to build the QBFT `extraData` field in `genesis.json`.
+This creates:
+- `validator1/key` through `validator4/key` — secp256k1 private keys
+- `rpc-node/key` — key for the RPC node
+- Prints Ethereum addresses for each validator
 
-### 2. Build the QBFT `extraData`
+### Step 2 — Update genesis extraData
 
-Besu's QBFT genesis `extraData` encodes the initial validator set. Use the
-[Besu QBFT genesis builder](https://besu.hyperledger.org/private-networks/how-to/configure/consensus/qbft)
-or the `besu operator generate-blockchain-config` tool with the four validator
-addresses printed in step 1.
-
-Update `genesis.json`'s `extraData` field with the result before starting the
-network for the first time.
-
-### 3. Start the network
+The `extraData` field in `genesis.json` must encode the validator addresses. Use the addresses printed by `generate-keys.js` and the Besu QBFT genesis tool:
 
 ```bash
-docker-compose up besu-validator1 besu-validator2 besu-validator3 besu-validator4 besu-rpc
+besu operator generate-blockchain-config \
+  --config-file=qbftConfigFile.json \
+  --to=networkFiles \
+  --private-key-file-name=key
 ```
 
-Or in detached mode:
+Or manually encode using the QBFT RLP format documented at:
+https://besu.hyperledger.org/private-networks/how-to/configure/consensus/qbft
+
+### Step 3 — Start the network
 
 ```bash
-docker-compose up -d besu-validator1 besu-validator2 besu-validator3 besu-validator4 besu-rpc
+docker-compose up besu-validator1 besu-validator2 besu-validator3 besu-validator4 besu-rpc -d
 ```
 
-### 4. Verify the network is producing blocks
+### Step 4 — Verify peers are connected
 
 ```bash
-curl -s -X POST http://localhost:8545 \
-  -H 'Content-Type: application/json' \
+curl -X POST http://localhost:8545 \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","method":"net_peerCount","params":[],"id":1}'
+```
+
+Expected: `"result": "0x3"` (3 peers for each validator)
+
+### Step 5 — Check block production
+
+```bash
+curl -X POST http://localhost:8545 \
+  -H "Content-Type: application/json" \
   -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}'
 ```
 
-The `result` field should increment every 2 seconds.
-
-### 5. Check validator set
-
-```bash
-curl -s -X POST http://localhost:8545 \
-  -H 'Content-Type: application/json' \
-  -d '{"jsonrpc":"2.0","method":"qbft_getValidatorsByBlockNumber","params":["latest"],"id":1}'
-```
-
----
+Block number should increase every 2 seconds.
 
 ## Network Parameters
 
 | Parameter | Value |
 |-----------|-------|
 | Chain ID | 1337 |
-| Consensus | QBFT |
 | Block period | 2 seconds |
-| Epoch length | 30 000 blocks |
 | Request timeout | 4 seconds |
-| Gas limit | `0x1fffffffffffff` |
-| RPC port (validators) | 8545 |
-| RPC port (rpc-node, host) | 8546 |
-| P2P port | 30303 |
-
----
-
-## Deploying Contracts
-
-After the network is running, deploy the `AnchorRegistry` contract:
-
-```bash
-cd blockchain
-npm install
-npx hardhat compile
-npx hardhat run scripts/deploy.js --network besu
-```
-
-Set the printed address as `ANCHOR_CONTRACT_ADDRESS` in your `.env` file.
-
----
-
-## Stopping the Network
-
-```bash
-docker-compose down
-```
-
-To also wipe chain data (full reset):
-
-```bash
-docker-compose down -v
-```
-
----
+| Epoch length | 30,000 blocks |
+| Gas limit | 0x1fffffffffffff |
+| Consensus | QBFT |
 
 ## Security Notes
 
-- The `key` files in this repository are for **local development only**.
-- For any shared or production deployment, generate keys offline, store them in a secrets manager, and never commit them to version control.
-- The `rpc-node` has no private key and does not participate in consensus; it is safe to expose its RPC port to internal services.
+- Private key files (`key`) are committed to git **only for the local dev network**
+- In production, keys must be managed via a Hardware Security Module (HSM) or key vault
+- Each validator node should be on a separate physical machine or VM
+- The RPC node is read-only and does not hold a validator key
