@@ -1,10 +1,19 @@
 'use strict';
 
 const express      = require('express');
+const rateLimit    = require('express-rate-limit');
 const authenticate = require('../middleware/authenticate');
 const { processCommit } = require('../services/commitService');
 
 const router = express.Router();
+
+// Tighter rate limit for commit endpoint: 200 req/min per tenant
+const commitLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 200,
+  keyGenerator: (req) => req.headers['x-api-key'] || req.ip,
+  message: { error: 'Commit rate limit exceeded' },
+});
 
 /**
  * POST /v1/commit
@@ -28,7 +37,7 @@ const router = express.Router();
  *   status:           "PENDING"
  * }
  */
-router.post('/', authenticate, async (req, res, next) => {
+router.post('/', authenticate, commitLimiter, async (req, res, next) => {
   try {
     const result = await processCommit(req.tenant, req.body);
     res.status(202).json(result);
