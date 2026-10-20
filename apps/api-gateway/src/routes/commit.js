@@ -3,6 +3,7 @@
 const express      = require('express');
 const rateLimit    = require('express-rate-limit');
 const authenticate = require('../middleware/authenticate');
+const { validateCommit } = require('../middleware/validate');
 const { processCommit } = require('../services/commitService');
 
 const router = express.Router();
@@ -37,7 +38,7 @@ const commitLimiter = rateLimit({
  *   status:           "PENDING"
  * }
  */
-router.post('/', authenticate, commitLimiter, async (req, res, next) => {
+router.post('/', authenticate, commitLimiter, validateCommit, async (req, res, next) => {
   try {
     const result = await processCommit(req.tenant, req.body);
     res.status(202).json(result);
