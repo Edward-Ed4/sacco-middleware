@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'dart:convert';
-import '../models/receipt.dart';
 import '../widgets/status_badge.dart';
 import 'result_screen.dart';
 import 'package:provider/provider.dart';
