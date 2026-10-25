@@ -9,6 +9,25 @@ const logger   = require('../utils/logger');
 const tenantCache = new Map();
 const CACHE_TTL_MS = 5 * 60 * 1000;
 
+function canonicaliseForHmac(value) {
+  if (value === null || value === undefined) {
+    return 'null';
+  }
+
+  if (Array.isArray(value)) {
+    return `[${value.map(item => canonicaliseForHmac(item)).join(',')}]`;
+  }
+
+  if (typeof value === 'object') {
+    const entries = Object.keys(value)
+      .sort()
+      .map((key) => `${JSON.stringify(key)}:${canonicaliseForHmac(value[key])}`);
+    return `{${entries.join(',')}}`;
+  }
+
+  return JSON.stringify(value);
+}
+
 async function getTenant(apiKey) {
   // Hash the raw key for lookup (bcrypt compare)
   // We store a cache entry keyed by the raw key hash for speed
@@ -58,8 +77,9 @@ async function authenticate(req, res, next) {
       return res.status(401).json({ error: 'Invalid API key' });
     }
 
-    // Verify HMAC over raw body
-    const rawBody  = JSON.stringify(req.body);
+    // Verify HMAC over a canonical body representation so equivalent JSON
+    // objects with different key ordering still produce the same signature.
+    const rawBody  = canonicaliseForHmac(req.body);
     const expected = crypto
       .createHmac('sha256', Buffer.from(tenant.hmac_key_hex, 'hex'))
       .update(rawBody)
