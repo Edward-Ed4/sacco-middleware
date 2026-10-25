@@ -22,19 +22,22 @@ class HomeScreen extends StatelessWidget {
         elevation: 0,
       ),
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SizedBox(height: 32),
-              // Header
-              const Icon(Icons.verified_user, size: 72, color: Color(0xFF1A56DB)),
+              const Icon(Icons.verified_user,
+                  size: 72, color: Color(0xFF1A56DB)),
               const SizedBox(height: 16),
               const Text(
                 'Verify Your Transaction',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF1A202C)),
+                style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1A202C)),
               ),
               const SizedBox(height: 8),
               const Text(
@@ -43,12 +46,11 @@ class HomeScreen extends StatelessWidget {
                 style: TextStyle(fontSize: 14, color: Color(0xFF718096)),
               ),
               const SizedBox(height: 48),
-
-              // QR Scan option
               _ChannelCard(
                 icon: Icons.qr_code_scanner,
                 title: 'Scan QR Code',
-                subtitle: 'For smartphone users\nScan the QR code on your receipt',
+                subtitle:
+                    'For smartphone users\nScan the QR code on your receipt',
                 color: const Color(0xFF1A56DB),
                 onTap: () => Navigator.push(
                   context,
@@ -56,20 +58,18 @@ class HomeScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 16),
-
-              // SMS option
               _ChannelCard(
                 icon: Icons.sms,
                 title: 'Enter SMS Code',
-                subtitle: 'For basic phone users\nEnter the 6-character code from your SMS',
+                subtitle:
+                    'For basic phone users\nEnter the 6-character code from your SMS',
                 color: const Color(0xFF057A55),
                 onTap: () => Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => const SmsVerifyScreen()),
                 ),
               ),
-
-              const Spacer(),
+              const SizedBox(height: 24),
               const Text(
                 'Powered by Hyperledger Besu QBFT Blockchain',
                 textAlign: TextAlign.center,
@@ -112,7 +112,8 @@ class _ChannelCard extends StatelessWidget {
           child: Row(
             children: [
               Container(
-                width: 52, height: 52,
+                width: 52,
+                height: 52,
                 decoration: BoxDecoration(
                   color: color.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(10),
@@ -124,9 +125,13 @@ class _ChannelCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                    Text(title,
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 16)),
                     const SizedBox(height: 4),
-                    Text(subtitle, style: const TextStyle(color: Color(0xFF718096), fontSize: 13)),
+                    Text(subtitle,
+                        style: const TextStyle(
+                            color: Color(0xFF718096), fontSize: 13)),
                   ],
                 ),
               ),
