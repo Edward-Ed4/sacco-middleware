@@ -1,4 +1,4 @@
-genesis-file="/config/../genesis.json"
+genesis-file="/config/genesis.json"
 data-path="/data"
 node-private-key-file="/config/key"
 rpc-http-enabled=true

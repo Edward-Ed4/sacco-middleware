@@ -1,4 +1,4 @@
-genesis-file="/config/../genesis.json"
+genesis-file="/config/genesis.json"
 data-path="/data"
 rpc-http-enabled=true
 rpc-http-host="0.0.0.0"
