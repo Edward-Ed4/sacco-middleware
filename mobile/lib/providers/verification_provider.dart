@@ -91,10 +91,26 @@ class VerificationProvider extends ChangeNotifier {
       );
 
       if (result.verified) {
-        _receipt    = result.receipt;
-        _proofValid = true;
-        _state      = VerificationState.verified;
-        _message    = result.message;
+        final receipt = result.receipt;
+        _receipt = receipt;
+
+        if (receipt?.merkleProof != null && receipt?.merkleRoot != null) {
+          _proofValid = MerkleVerifier.verify(
+            leafHex: receipt!.leafHex,
+            proof: receipt.merkleProof!,
+            rootHex: receipt.merkleRoot!,
+          );
+          _state = _proofValid
+              ? VerificationState.verified
+              : VerificationState.failed;
+          _message = _proofValid
+              ? result.message
+              : 'WARNING: Merkle proof invalid. This receipt may have been tampered with.';
+        } else {
+          _proofValid = false;
+          _state = VerificationState.verified;
+          _message = 'Verification code accepted. Blockchain anchoring is pending.';
+        }
       } else {
         _state   = VerificationState.failed;
         _message = result.attemptsRemaining != null

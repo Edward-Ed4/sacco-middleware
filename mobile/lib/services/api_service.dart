@@ -9,8 +9,14 @@ class ApiService {
   final String smsBaseUrl;
 
   const ApiService({
-    this.gatewayBaseUrl = 'http://localhost:3000',
-    this.smsBaseUrl     = 'http://localhost:3002',
+    this.gatewayBaseUrl = const String.fromEnvironment(
+      'API_BASE_URL',
+      defaultValue: 'http://localhost:3000',
+    ),
+    this.smsBaseUrl = const String.fromEnvironment(
+      'SMS_BASE_URL',
+      defaultValue: 'http://localhost:3002',
+    ),
   });
 
   /// Fetch receipt details and Merkle proof from the gateway.

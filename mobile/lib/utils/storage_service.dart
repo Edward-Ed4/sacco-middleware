@@ -58,6 +58,10 @@ class StorageService {
 
   /// Load gateway base URL, with default fallback.
   static Future<String> loadGatewayUrl() async {
-    return await _storage.read(key: 'gateway_url') ?? 'http://localhost:3000';
+    return await _storage.read(key: 'gateway_url') ??
+        const String.fromEnvironment(
+          'API_BASE_URL',
+          defaultValue: 'http://localhost:3000',
+        );
   }
 }
