@@ -43,13 +43,16 @@ app.post('/sms/verify', verifyLimiter, async (req, res) => {
     // Fetch commitment + tenant HMAC key
     const { rows } = await client.query(
       `SELECT c.receipt_id, c.tx_ref, c.tx_type, c.amount,
-              c.tx_timestamp, c.sequence_no, c.status,
-              c.sms_code, c.batch_id, c.block_number,
+              c.tenant_id, c.acct_pseudo, c.leaf_hex, c.tx_timestamp,
+              c.sequence_no, c.status, c.merkle_proof, c.batch_id, c.block_number,
+              c.sms_code,
+              b.merkle_root, b.tx_hash,
               t.hmac_key_hex,
               sv.phone_number AS registered_phone,
               sv.attempts, sv.locked_until
        FROM commitments c
        JOIN tenants t ON t.id = c.tenant_id
+       LEFT JOIN anchor_batches b ON b.id = c.batch_id
        LEFT JOIN sms_verifications sv ON sv.receipt_id = c.receipt_id
        WHERE c.receipt_id = $1`,
       [receiptId]
@@ -111,13 +114,20 @@ app.post('/sms/verify', verifyLimiter, async (req, res) => {
     res.json({
       verified:    true,
       receiptId:   row.receipt_id,
+      tenantId:    row.tenant_id,
       txRef:       row.tx_ref,
       txType:      row.tx_type,
       amount:      row.amount,
+      acctPseudo:  row.acct_pseudo,
+      leafHex:     row.leaf_hex,
       txTimestamp: row.tx_timestamp,
       sequenceNo:  row.sequence_no,
       status:      row.status,
+      merkleProof: row.merkle_proof || null,
+      merkleRoot:  row.merkle_root || null,
+      batchId:     row.batch_id || null,
       blockNumber: row.block_number || null,
+      txHash:      row.tx_hash || null,
       message:     row.status === 'ANCHORED'
         ? 'Transaction is recorded and anchored on the blockchain.'
         : 'Transaction is recorded and pending blockchain anchoring.',

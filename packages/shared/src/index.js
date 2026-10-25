@@ -21,6 +21,7 @@ module.exports = {
 
   // Canonicalisation
   ...require('./canonicalise'),
+  ...require('./canonicalJson'),
 
   // Constants
   ...require('./constants'),

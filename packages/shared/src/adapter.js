@@ -33,6 +33,7 @@
 
 const crypto = require('crypto');
 const { pseudonymise } = require('./pseudonymise');
+const { canonicaliseJson } = require('./canonicalJson');
 
 class SaccoAdapter {
   /**
@@ -69,7 +70,16 @@ class SaccoAdapter {
    * @returns {Promise<{ receiptId, qrPayload, verificationCode, status }>}
    */
   async commit(tx) {
-    const body    = JSON.stringify(tx);
+    const payload = {
+      tx_ref: tx.tx_ref ?? tx.txRef,
+      tx_type: tx.tx_type ?? tx.txType,
+      amount: tx.amount,
+      acct_pseudo: tx.acct_pseudo ?? tx.acctPseudo,
+      tx_timestamp: tx.tx_timestamp ?? tx.txTimestamp,
+      sequence_no: tx.sequence_no ?? tx.sequenceNo,
+      phone_number: tx.phone_number ?? tx.phoneNumber,
+    };
+    const body    = JSON.stringify(payload);
     const hmac    = this._computeHmac(body);
     const url     = `${this._gatewayUrl}/v1/commit`;
 
@@ -99,7 +109,7 @@ class SaccoAdapter {
   _computeHmac(body) {
     return crypto
       .createHmac('sha256', Buffer.from(this._hmacKeyHex, 'hex'))
-      .update(body)
+      .update(canonicaliseJson(JSON.parse(body)))
       .digest('hex');
   }
 }

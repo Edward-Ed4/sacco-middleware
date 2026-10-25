@@ -17,6 +17,7 @@
  */
 
 const crypto = require('crypto');
+const { canonicaliseJson } = require('@sacco/shared');
 
 const GATEWAY = process.env.GATEWAY_URL || 'http://localhost:3000';
 
@@ -48,7 +49,7 @@ async function get(path) {
 function computeHmac(body, hmacKeyHex) {
   return crypto
     .createHmac('sha256', Buffer.from(hmacKeyHex, 'hex'))
-    .update(body)
+    .update(canonicaliseJson(JSON.parse(body)))
     .digest('hex');
 }
 
