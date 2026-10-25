@@ -69,8 +69,10 @@ function generateCode(receiptId, hmacKeyHex) {
  */
 function verifyCode(submittedCode, receiptId, hmacKeyHex) {
   const expected = generateCode(receiptId, hmacKeyHex);
+  const normalized = String(submittedCode ?? '').trim().toUpperCase();
+
   // Constant-time comparison to prevent timing attacks
-  const a = Buffer.from(submittedCode.toUpperCase().padEnd(6, ' '));
+  const a = Buffer.from(normalized.padEnd(6, ' '));
   const b = Buffer.from(expected.padEnd(6, ' '));
   return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
