@@ -12,7 +12,9 @@ coverage/
 flutter/build/
 infra/besu/validator*/data/
 infra/besu/rpc-node/data/
+infra/besu/generated/
 infra/besu/**/genesis.json
 infra/besu/**/key
+infra/besu/deployer.key
 *.key
 *.pem

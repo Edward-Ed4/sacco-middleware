@@ -16,7 +16,6 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./infra/postgres/init.sql:/docker-entrypoint-initdb.d/01-init.sql
-      - ./infra/postgres/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U sacco_user -d sacco_middleware"]
       interval: 5s
@@ -46,7 +45,7 @@ services:
     restart: unless-stopped
     volumes:
       - ./infra/besu/validator1:/config
-      - ./infra/besu/genesis.json:/config/genesis.json
+      - ./infra/besu/generated/genesis.json:/config/genesis.json:ro
       - besu_v1_data:/data
     command: >
       --config-file=/config/config.toml
@@ -61,7 +60,7 @@ services:
     restart: unless-stopped
     volumes:
       - ./infra/besu/validator2:/config
-      - ./infra/besu/genesis.json:/config/genesis.json
+      - ./infra/besu/generated/genesis.json:/config/genesis.json:ro
       - besu_v2_data:/data
     command: >
       --config-file=/config/config.toml
@@ -75,7 +74,7 @@ services:
     restart: unless-stopped
     volumes:
       - ./infra/besu/validator3:/config
-      - ./infra/besu/genesis.json:/config/genesis.json
+      - ./infra/besu/generated/genesis.json:/config/genesis.json:ro
       - besu_v3_data:/data
     command: >
       --config-file=/config/config.toml
@@ -89,7 +88,7 @@ services:
     restart: unless-stopped
     volumes:
       - ./infra/besu/validator4:/config
-      - ./infra/besu/genesis.json:/config/genesis.json
+      - ./infra/besu/generated/genesis.json:/config/genesis.json:ro
       - besu_v4_data:/data
     command: >
       --config-file=/config/config.toml
@@ -103,7 +102,7 @@ services:
     restart: unless-stopped
     volumes:
       - ./infra/besu/rpc-node:/config
-      - ./infra/besu/genesis.json:/config/genesis.json
+      - ./infra/besu/generated/genesis.json:/config/genesis.json:ro
       - besu_rpc_data:/data
     command: >
       --config-file=/config/config.toml

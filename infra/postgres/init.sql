@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS commitments (
     batch_id        UUID,
     merkle_proof    JSONB,                    -- array of sibling hashes
     block_number    BIGINT,
-    receipt_id      UUID NOT NULL DEFAULT uuid_generate_v4(),
+    receipt_id      UUID NOT NULL UNIQUE DEFAULT uuid_generate_v4(),
     qr_payload      TEXT,                     -- Ed25519-signed JSON (base64)
     sms_code        TEXT,                     -- 6-char Crockford Base32 code
     created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -100,7 +100,7 @@ CREATE TABLE IF NOT EXISTS alerts (
 -- ─── SMS Verification Attempts ───────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS sms_verifications (
     id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    receipt_id      UUID NOT NULL REFERENCES commitments(receipt_id),
+    receipt_id      UUID NOT NULL UNIQUE REFERENCES commitments(receipt_id),
     phone_number    TEXT NOT NULL,
     attempts        INT NOT NULL DEFAULT 0,
     locked_until    TIMESTAMPTZ,
