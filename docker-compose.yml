@@ -43,7 +43,7 @@ services:
     restart: unless-stopped
     volumes:
       - ./infra/besu/validator1:/config
-      - ./infra/besu/generated/genesis.json:/config/genesis.json:ro
+      - ./infra/besu/genesis.json:/config/genesis.json:ro
       - besu_v1_data:/data
     command: >
       --config-file=/config/config.toml
@@ -58,7 +58,7 @@ services:
     restart: unless-stopped
     volumes:
       - ./infra/besu/validator2:/config
-      - ./infra/besu/generated/genesis.json:/config/genesis.json:ro
+      - ./infra/besu/genesis.json:/config/genesis.json:ro
       - besu_v2_data:/data
     command: >
       --config-file=/config/config.toml
@@ -72,7 +72,7 @@ services:
     restart: unless-stopped
     volumes:
       - ./infra/besu/validator3:/config
-      - ./infra/besu/generated/genesis.json:/config/genesis.json:ro
+      - ./infra/besu/genesis.json:/config/genesis.json:ro
       - besu_v3_data:/data
     command: >
       --config-file=/config/config.toml
@@ -86,7 +86,7 @@ services:
     restart: unless-stopped
     volumes:
       - ./infra/besu/validator4:/config
-      - ./infra/besu/generated/genesis.json:/config/genesis.json:ro
+      - ./infra/besu/genesis.json:/config/genesis.json:ro
       - besu_v4_data:/data
     command: >
       --config-file=/config/config.toml
@@ -100,7 +100,7 @@ services:
     restart: unless-stopped
     volumes:
       - ./infra/besu/rpc-node:/config
-      - ./infra/besu/generated/genesis.json:/config/genesis.json:ro
+      - ./infra/besu/genesis.json:/config/genesis.json:ro
       - besu_rpc_data:/data
     command: >
       --config-file=/config/config.toml

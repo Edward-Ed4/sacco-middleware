@@ -7,5 +7,7 @@ rpc-http-api=["ETH","NET","QBFT","WEB3","ADMIN"]
 rpc-http-cors-origins=["*"]
 host-allowlist=["*"]
 p2p-port=30303
+p2p-host="0.0.0.0"
 logging="INFO"
+min-gas-price=0
 sync-mode="FULL"
