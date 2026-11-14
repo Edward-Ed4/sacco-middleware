@@ -8,192 +8,513 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --primary:   #1a56db;
-      --danger:    #e02424;
-      --warning:   #ff8800;
-      --success:   #057a55;
-      --bg:        #f4f6fb;
-      --card:      #ffffff;
-      --border:    #e2e8f0;
-      --text:      #1a202c;
-      --muted:     #718096;
+      --bg:        #0d1117;
+      --surface:   #161b22;
+      --surface2:  #1c2230;
+      --border:    #2a3444;
+      --teal:      #00d4aa;
+      --teal-dim:  #00d4aa22;
+      --teal-dark: #009e7f;
+      --red:       #f85149;
+      --red-dim:   #f8514922;
+      --yellow:    #d29922;
+      --yellow-dim:#d2992222;
+      --green:     #3fb950;
+      --green-dim: #3fb95022;
+      --text:      #e6edf3;
+      --muted:     #7d8590;
+      --white:     #ffffff;
     }
 
-    body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); }
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
 
+    /* ── Top Nav ───────────────────────────────────────────────── */
     header {
-      background: var(--primary); color: #fff;
-      padding: 1rem 2rem; display: flex; align-items: center; justify-content: space-between;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
     }
-    header h1 { font-size: 1.25rem; font-weight: 700; }
-    header span { font-size: .85rem; opacity: .8; }
-
-    nav {
-      background: #fff; border-bottom: 1px solid var(--border);
-      display: flex; gap: 0; padding: 0 2rem;
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: .6rem;
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: var(--teal);
+      letter-spacing: .5px;
     }
-    nav button {
-      background: none; border: none; border-bottom: 3px solid transparent;
-      padding: .75rem 1.25rem; cursor: pointer; font-size: .9rem; color: var(--muted);
-      transition: color .15s, border-color .15s;
+    .logo-icon {
+      width: 28px; height: 28px;
+      background: var(--teal);
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      color: #000;
+      font-size: .75rem;
+      font-weight: 900;
     }
-    nav button.active, nav button:hover { color: var(--primary); border-bottom-color: var(--primary); }
+    .nav-status {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      font-size: .8rem;
+      color: var(--muted);
+    }
+    .status-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      display: inline-block;
+      margin-right: 4px;
+      animation: pulse-dot 2s ease infinite;
+    }
+    @keyframes pulse-dot {
+      0%,100% { opacity:1; }
+      50%      { opacity:.4; }
+    }
+    .refresh-time { color: var(--muted); font-size: .75rem; }
 
-    main { padding: 2rem; max-width: 1400px; margin: 0 auto; }
+    /* ── Side Nav ──────────────────────────────────────────────── */
+    .layout { display: flex; min-height: calc(100vh - 56px); }
 
-    .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+    aside {
+      width: 200px;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      padding: 1.5rem 0;
+      flex-shrink: 0;
+    }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      padding: .65rem 1.5rem;
+      cursor: pointer;
+      font-size: .85rem;
+      color: var(--muted);
+      border-left: 3px solid transparent;
+      transition: all .15s;
+    }
+    .nav-item:hover { background: var(--surface2); color: var(--text); }
+    .nav-item.active {
+      color: var(--teal);
+      border-left-color: var(--teal);
+      background: var(--teal-dim);
+    }
+    .nav-icon { font-size: 1rem; width: 18px; text-align: center; }
+
+    /* ── Main Content ──────────────────────────────────────────── */
+    main {
+      flex: 1;
+      padding: 2rem;
+      overflow-y: auto;
+    }
+
+    .page-title {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--white);
+      margin-bottom: .4rem;
+    }
+    .page-sub {
+      font-size: .8rem;
+      color: var(--muted);
+      margin-bottom: 2rem;
+    }
+
+    /* ── Stat Cards ────────────────────────────────────────────── */
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
     .stat-card {
-      background: var(--card); border-radius: 8px; padding: 1.25rem 1.5rem;
-      border: 1px solid var(--border); box-shadow: 0 1px 3px rgba(0,0,0,.06);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.25rem 1.5rem;
+      transition: border-color .2s;
     }
-    .stat-card .label { font-size: .8rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
-    .stat-card .value { font-size: 2rem; font-weight: 700; margin-top: .25rem; }
-    .stat-card.danger .value { color: var(--danger); }
-    .stat-card.warning .value { color: var(--warning); }
-    .stat-card.success .value { color: var(--success); }
-
-    .section { background: var(--card); border-radius: 8px; border: 1px solid var(--border); margin-bottom: 1.5rem; overflow: hidden; }
-    .section-header { padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
-    .section-header h2 { font-size: 1rem; font-weight: 600; }
-    .refresh-btn {
-      background: var(--primary); color: #fff; border: none; border-radius: 4px;
-      padding: .4rem .9rem; cursor: pointer; font-size: .8rem;
+    .stat-card:hover { border-color: var(--teal); }
+    .stat-label {
+      font-size: .7rem;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--muted);
+      margin-bottom: .5rem;
     }
-    .refresh-btn:hover { opacity: .9; }
+    .stat-value {
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--white);
+      font-variant-numeric: tabular-nums;
+    }
+    .stat-value.teal   { color: var(--teal); }
+    .stat-value.red    { color: var(--red); }
+    .stat-value.yellow { color: var(--yellow); }
+    .stat-value.green  { color: var(--green); }
+    .stat-sub {
+      font-size: .72rem;
+      color: var(--muted);
+      margin-top: .3rem;
+    }
 
-    table { width: 100%; border-collapse: collapse; font-size: .85rem; }
-    th { background: var(--bg); padding: .75rem 1rem; text-align: left; font-size: .75rem; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--border); }
-    td { padding: .75rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    /* ── Section Cards ─────────────────────────────────────────── */
+    .section-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .section-grid.full { grid-template-columns: 1fr; }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .card-header {
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .card-title {
+      font-size: .9rem;
+      font-weight: 600;
+      color: var(--white);
+    }
+    .card-action {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: .3rem .8rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: .75rem;
+      transition: all .15s;
+    }
+    .card-action:hover { border-color: var(--teal); color: var(--teal); }
+
+    /* ── Tables ─────────────────────────────────────────────────── */
+    table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+    th {
+      padding: .75rem 1.25rem;
+      text-align: left;
+      font-size: .7rem;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+      background: var(--surface2);
+    }
+    td {
+      padding: .85rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+      color: var(--text);
+      vertical-align: middle;
+    }
     tr:last-child td { border-bottom: none; }
-    tr:hover td { background: var(--bg); }
+    tr:hover td { background: var(--surface2); }
 
+    /* ── Badges ─────────────────────────────────────────────────── */
     .badge {
-      display: inline-block; padding: .2rem .6rem; border-radius: 999px;
-      font-size: .75rem; font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: .2rem .7rem;
+      border-radius: 999px;
+      font-size: .72rem;
+      font-weight: 600;
     }
-    .badge.ANCHORED, .badge.VALID   { background: #def7ec; color: var(--success); }
-    .badge.PENDING                  { background: #fef3c7; color: #92400e; }
-    .badge.MODIFIED, .badge.DELETED { background: #fde8e8; color: var(--danger); }
-    .badge.UNANCHORED               { background: #feecdc; color: var(--warning); }
+    .badge::before { content: '●'; font-size: .6rem; }
+    .badge.ANCHORED, .badge.VALID, .badge.SENT {
+      background: var(--green-dim); color: var(--green);
+    }
+    .badge.PENDING {
+      background: var(--yellow-dim); color: var(--yellow);
+    }
+    .badge.MODIFIED, .badge.DELETED, .badge.FAILED {
+      background: var(--red-dim); color: var(--red);
+    }
+    .badge.UNANCHORED {
+      background: #d2992222; color: var(--yellow);
+    }
 
-    .mono { font-family: 'Courier New', monospace; font-size: .8rem; word-break: break-all; }
-    .muted { color: var(--muted); }
-    .hidden { display: none; }
+    /* ── Mono hash ──────────────────────────────────────────────── */
+    .mono {
+      font-family: 'Cascadia Code', 'Fira Code', 'Courier New', monospace;
+      font-size: .75rem;
+      color: var(--teal);
+    }
 
-    #loading { text-align: center; padding: 3rem; color: var(--muted); font-size: .95rem; }
-    #error-msg { background: #fde8e8; color: var(--danger); padding: 1rem 1.5rem; border-radius: 6px; margin-bottom: 1rem; display: none; }
+    /* ── Empty state ────────────────────────────────────────────── */
+    .empty {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: var(--muted);
+      font-size: .85rem;
+    }
+
+    /* ── Alert banner ───────────────────────────────────────────── */
+    #alert-banner {
+      background: var(--red-dim);
+      border: 1px solid var(--red);
+      border-radius: 8px;
+      padding: .75rem 1.25rem;
+      margin-bottom: 1.5rem;
+      color: var(--red);
+      font-size: .85rem;
+      display: none;
+    }
+
+    /* ── Tab pages ──────────────────────────────────────────────── */
+    .tab-page { display: none; }
+    .tab-page.active { display: block; }
+
+    /* ── Blockchain live indicator ──────────────────────────────── */
+    .chain-badge {
+      background: var(--teal-dim);
+      border: 1px solid var(--teal);
+      border-radius: 999px;
+      padding: .2rem .8rem;
+      font-size: .72rem;
+      color: var(--teal);
+    }
+
+    /* ── Responsive ─────────────────────────────────────────────── */
+    @media (max-width: 900px) {
+      aside { display: none; }
+      .section-grid { grid-template-columns: 1fr; }
+      .stat-grid { grid-template-columns: repeat(2, 1fr); }
+    }
   </style>
 </head>
 <body>
 
+<!-- ── Header ─────────────────────────────────────────────────────── -->
 <header>
-  <h1>🔐 SACCO Middleware — Auditor &amp; Regulator Dashboard</h1>
-  <span id="last-refresh">Loading...</span>
+  <div class="logo">
+    <div class="logo-icon">SM</div>
+    SACCO Middleware
+  </div>
+  <div class="nav-status">
+    <span><span class="status-dot"></span>System Online</span>
+    <span class="chain-badge" id="chain-status">⛓ Chain: loading...</span>
+    <span class="refresh-time" id="last-refresh">—</span>
+  </div>
 </header>
 
-<nav>
-  <button class="active" onclick="showTab('overview')">Overview</button>
-  <button onclick="showTab('findings')">Findings</button>
-  <button onclick="showTab('batches')">Anchor Batches</button>
-  <button onclick="showTab('reconciliation')">Reconciliation</button>
-  <button onclick="showTab('alerts')">Alerts</button>
-  <button onclick="showTab('tenants')">Tenants</button>
-</nav>
+<div class="layout">
 
-<main>
-  <div id="error-msg"></div>
-
-  <!-- OVERVIEW TAB -->
-  <div id="tab-overview">
-    <div class="stat-grid" id="stat-grid">
-      <div class="stat-card"><div class="label">Total Commitments</div><div class="value" id="s-total">—</div></div>
-      <div class="stat-card success"><div class="label">Anchored</div><div class="value" id="s-anchored">—</div></div>
-      <div class="stat-card warning"><div class="label">Pending</div><div class="value" id="s-pending">—</div></div>
-      <div class="stat-card"><div class="label">Anchor Batches</div><div class="value" id="s-batches">—</div></div>
-      <div class="stat-card danger"><div class="label">Modified Records</div><div class="value" id="s-modified">—</div></div>
-      <div class="stat-card danger"><div class="label">Deleted Records</div><div class="value" id="s-deleted">—</div></div>
-      <div class="stat-card warning"><div class="label">Unanchored</div><div class="value" id="s-unanchored">—</div></div>
-      <div class="stat-card warning"><div class="label">Pending Alerts</div><div class="value" id="s-alerts">—</div></div>
+  <!-- ── Sidebar ──────────────────────────────────────────────────── -->
+  <aside>
+    <div class="nav-item active" onclick="showTab('overview', this)">
+      <span class="nav-icon">◈</span> Overview
     </div>
+    <div class="nav-item" onclick="showTab('findings', this)">
+      <span class="nav-icon">⚠</span> Findings
+    </div>
+    <div class="nav-item" onclick="showTab('batches', this)">
+      <span class="nav-icon">⛓</span> Batches
+    </div>
+    <div class="nav-item" onclick="showTab('reconciliation', this)">
+      <span class="nav-icon">↻</span> Reconciliation
+    </div>
+    <div class="nav-item" onclick="showTab('alerts', this)">
+      <span class="nav-icon">🔔</span> Alerts
+    </div>
+    <div class="nav-item" onclick="showTab('tenants', this)">
+      <span class="nav-icon">🏦</span> Tenants
+    </div>
+  </aside>
 
-    <div class="section">
-      <div class="section-header">
-        <h2>Recent Findings</h2>
-        <button class="refresh-btn" onclick="loadAll()">↻ Refresh</button>
+  <!-- ── Main ─────────────────────────────────────────────────────── -->
+  <main>
+
+    <div id="alert-banner" role="alert"></div>
+
+    <!-- OVERVIEW -->
+    <div class="tab-page active" id="tab-overview">
+      <div class="page-title">Dashboard Overview</div>
+      <div class="page-sub">Real-time tamper detection and blockchain anchoring status</div>
+
+      <div class="stat-grid" id="stat-grid">
+        <div class="stat-card">
+          <div class="stat-label">Total Commitments</div>
+          <div class="stat-value" id="s-total">—</div>
+          <div class="stat-sub">All transactions</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Anchored</div>
+          <div class="stat-value green" id="s-anchored">—</div>
+          <div class="stat-sub">On blockchain</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Pending</div>
+          <div class="stat-value yellow" id="s-pending">—</div>
+          <div class="stat-sub">Awaiting batch</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Anchor Batches</div>
+          <div class="stat-value teal" id="s-batches">—</div>
+          <div class="stat-sub">Merkle roots</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Modified Records</div>
+          <div class="stat-value red" id="s-modified">—</div>
+          <div class="stat-sub">Tampered data</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Deleted Records</div>
+          <div class="stat-value red" id="s-deleted">—</div>
+          <div class="stat-sub">Missing rows</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Unanchored</div>
+          <div class="stat-value yellow" id="s-unanchored">—</div>
+          <div class="stat-sub">Not in blockchain</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Pending Alerts</div>
+          <div class="stat-value red" id="s-alerts">—</div>
+          <div class="stat-sub">Unsent notifications</div>
+        </div>
       </div>
-      <table id="findings-table-overview">
-        <thead><tr><th>Tenant</th><th>Tx Ref</th><th>Finding</th><th>Time</th></tr></thead>
-        <tbody id="findings-body-overview"><tr><td colspan="4" class="muted" style="text-align:center">Loading...</td></tr></tbody>
-      </table>
-    </div>
-  </div>
 
-  <!-- FINDINGS TAB -->
-  <div id="tab-findings" class="hidden">
-    <div class="section">
-      <div class="section-header"><h2>All Reconciliation Findings</h2><button class="refresh-btn" onclick="loadFindings()">↻ Refresh</button></div>
-      <table>
-        <thead><tr><th>Tenant</th><th>Tx Ref</th><th>Finding</th><th>Detail</th><th>Alerted</th><th>Time</th></tr></thead>
-        <tbody id="findings-body"></tbody>
-      </table>
+      <div class="section-grid">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Recent Findings</span>
+            <button class="card-action" onclick="loadAll()">↻ Refresh</button>
+          </div>
+          <table>
+            <thead><tr><th>Tenant</th><th>Tx Ref</th><th>Finding</th><th>Time</th></tr></thead>
+            <tbody id="findings-body-overview">
+              <tr><td colspan="4" class="empty">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Latest Anchor Batches</span>
+          </div>
+          <table>
+            <thead><tr><th>Tenant</th><th>Root</th><th>Block</th><th>Time</th></tr></thead>
+            <tbody id="batches-body-overview">
+              <tr><td colspan="4" class="empty">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
-  </div>
 
-  <!-- BATCHES TAB -->
-  <div id="tab-batches" class="hidden">
-    <div class="section">
-      <div class="section-header"><h2>Anchor Batches (Blockchain)</h2><button class="refresh-btn" onclick="loadBatches()">↻ Refresh</button></div>
-      <table>
-        <thead><tr><th>Tenant</th><th>Merkle Root</th><th>Seq Range</th><th>Block</th><th>Tx Hash</th><th>Anchored At</th></tr></thead>
-        <tbody id="batches-body"></tbody>
-      </table>
+    <!-- FINDINGS -->
+    <div class="tab-page" id="tab-findings">
+      <div class="page-title">Reconciliation Findings</div>
+      <div class="page-sub">Records flagged as MODIFIED, DELETED or UNANCHORED</div>
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">All Findings</span>
+          <button class="card-action" onclick="loadFindings()">↻ Refresh</button>
+        </div>
+        <table>
+          <thead><tr><th>Tenant</th><th>Tx Ref</th><th>Finding</th><th>Detail</th><th>Alerted</th><th>Time</th></tr></thead>
+          <tbody id="findings-body"></tbody>
+        </table>
+      </div>
     </div>
-  </div>
 
-  <!-- RECONCILIATION TAB -->
-  <div id="tab-reconciliation" class="hidden">
-    <div class="section">
-      <div class="section-header"><h2>Reconciliation Run History</h2><button class="refresh-btn" onclick="loadReconciliation()">↻ Refresh</button></div>
-      <table>
-        <thead><tr><th>Tenant</th><th>Run At</th><th>Checked</th><th>Valid</th><th>Modified</th><th>Deleted</th><th>Unanchored</th></tr></thead>
-        <tbody id="reconciliation-body"></tbody>
-      </table>
+    <!-- BATCHES -->
+    <div class="tab-page" id="tab-batches">
+      <div class="page-title">Anchor Batches</div>
+      <div class="page-sub">Merkle roots recorded on the Hyperledger Besu QBFT blockchain</div>
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Blockchain Records</span>
+          <button class="card-action" onclick="loadBatches()">↻ Refresh</button>
+        </div>
+        <table>
+          <thead><tr><th>Tenant</th><th>Merkle Root</th><th>Seq Range</th><th>Block</th><th>Tx Hash</th><th>Anchored At</th></tr></thead>
+          <tbody id="batches-body"></tbody>
+        </table>
+      </div>
     </div>
-  </div>
 
-  <!-- ALERTS TAB -->
-  <div id="tab-alerts" class="hidden">
-    <div class="section">
-      <div class="section-header"><h2>Alert Log</h2><button class="refresh-btn" onclick="loadAlerts()">↻ Refresh</button></div>
-      <table>
-        <thead><tr><th>Tenant</th><th>Channel</th><th>Status</th><th>Message</th><th>Sent At</th></tr></thead>
-        <tbody id="alerts-body"></tbody>
-      </table>
+    <!-- RECONCILIATION -->
+    <div class="tab-page" id="tab-reconciliation">
+      <div class="page-title">Reconciliation History</div>
+      <div class="page-sub">Scheduled engine runs — leaf recomputation and chain integrity checks</div>
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Run History</span>
+          <button class="card-action" onclick="loadReconciliation()">↻ Refresh</button>
+        </div>
+        <table>
+          <thead><tr><th>Tenant</th><th>Run At</th><th>Checked</th><th>Valid</th><th>Modified</th><th>Deleted</th><th>Unanchored</th></tr></thead>
+          <tbody id="reconciliation-body"></tbody>
+        </table>
+      </div>
     </div>
-  </div>
 
-  <!-- TENANTS TAB -->
-  <div id="tab-tenants" class="hidden">
-    <div class="section">
-      <div class="section-header"><h2>Registered Tenants</h2><button class="refresh-btn" onclick="loadTenants()">↻ Refresh</button></div>
-      <table>
-        <thead><tr><th>ID</th><th>Name</th><th>Active</th><th>Created</th></tr></thead>
-        <tbody id="tenants-body"></tbody>
-      </table>
+    <!-- ALERTS -->
+    <div class="tab-page" id="tab-alerts">
+      <div class="page-title">Alert Log</div>
+      <div class="page-sub">Notifications sent to officials via SMS, email and dashboard</div>
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Recent Alerts</span>
+          <button class="card-action" onclick="loadAlerts()">↻ Refresh</button>
+        </div>
+        <table>
+          <thead><tr><th>Tenant</th><th>Channel</th><th>Status</th><th>Message</th><th>Sent At</th></tr></thead>
+          <tbody id="alerts-body"></tbody>
+        </table>
+      </div>
     </div>
-  </div>
-</main>
+
+    <!-- TENANTS -->
+    <div class="tab-page" id="tab-tenants">
+      <div class="page-title">Registered SACCOs</div>
+      <div class="page-sub">Active tenant institutions connected to the middleware</div>
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Tenants</span>
+          <button class="card-action" onclick="loadTenants()">↻ Refresh</button>
+        </div>
+        <table>
+          <thead><tr><th>ID</th><th>Name</th><th>Active</th><th>Registered</th></tr></thead>
+          <tbody id="tenants-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+</div>
 
 <script>
 const tabs = ['overview','findings','batches','reconciliation','alerts','tenants'];
 
-function showTab(name) {
+function showTab(name, el) {
   tabs.forEach(t => {
-    document.getElementById('tab-' + t).classList.toggle('hidden', t !== name);
+    document.getElementById('tab-' + t).classList.toggle('active', t === name);
   });
-  document.querySelectorAll('nav button').forEach((btn, i) => {
-    btn.classList.toggle('active', tabs[i] === name);
-  });
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  if (el) el.classList.add('active');
   if (name === 'findings')       loadFindings();
   if (name === 'batches')        loadBatches();
   if (name === 'reconciliation') loadReconciliation();
@@ -207,70 +528,82 @@ async function fetchJSON(url) {
   return res.json();
 }
 
-function showError(msg) {
-  const el = document.getElementById('error-msg');
-  el.textContent = msg;
-  el.style.display = 'block';
-  setTimeout(() => { el.style.display = 'none'; }, 6000);
-}
-
 function badge(status) {
   return `<span class="badge ${status}">${status}</span>`;
 }
 
 function shortHash(h) {
-  return h ? `<span class="mono" title="${h}">${h.substring(0,10)}…</span>` : '—';
+  return h ? `<span class="mono" title="${h}">${h.substring(0,8)}…${h.slice(-6)}</span>` : '—';
 }
 
 function fmtTime(ts) {
   if (!ts) return '—';
-  return new Date(ts).toLocaleString();
+  return new Date(ts).toLocaleString('en-GB', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
+}
+
+function showError(msg) {
+  const b = document.getElementById('alert-banner');
+  b.textContent = '⚠ ' + msg;
+  b.style.display = 'block';
+  setTimeout(() => b.style.display = 'none', 5000);
 }
 
 async function loadStats() {
   try {
     const d = await fetchJSON('/api/stats');
-    document.getElementById('s-total').textContent    = d.commitments.total;
-    document.getElementById('s-anchored').textContent = d.commitments.anchored;
-    document.getElementById('s-pending').textContent  = d.commitments.pending;
-    document.getElementById('s-batches').textContent  = d.batches.total;
-    document.getElementById('s-modified').textContent = d.findings.modified;
-    document.getElementById('s-deleted').textContent  = d.findings.deleted;
-    document.getElementById('s-unanchored').textContent = d.findings.unanchored;
-    document.getElementById('s-alerts').textContent   = d.alerts.pending_alerts;
-    document.getElementById('last-refresh').textContent = 'Last refresh: ' + new Date().toLocaleTimeString();
-  } catch (err) { showError('Stats: ' + err.message); }
+    document.getElementById('s-total').textContent     = d.commitments.total      || 0;
+    document.getElementById('s-anchored').textContent  = d.commitments.anchored   || 0;
+    document.getElementById('s-pending').textContent   = d.commitments.pending    || 0;
+    document.getElementById('s-batches').textContent   = d.batches.total          || 0;
+    document.getElementById('s-modified').textContent  = d.findings.modified      || 0;
+    document.getElementById('s-deleted').textContent   = d.findings.deleted       || 0;
+    document.getElementById('s-unanchored').textContent= d.findings.unanchored    || 0;
+    document.getElementById('s-alerts').textContent    = d.alerts.pending_alerts  || 0;
+    document.getElementById('last-refresh').textContent = 'Updated ' + new Date().toLocaleTimeString();
+  } catch (err) { showError('Stats unavailable: ' + err.message); }
 }
 
 async function loadFindingsOverview() {
   try {
-    const rows = await fetchJSON('/api/findings?limit=10');
+    const rows = await fetchJSON('/api/findings?limit=8');
     const tbody = document.getElementById('findings-body-overview');
-    if (!rows.length) { tbody.innerHTML = '<tr><td colspan="4" class="muted" style="text-align:center">No findings</td></tr>'; return; }
-    tbody.innerHTML = rows.map(r => `
+    tbody.innerHTML = rows.length ? rows.map(r => `
       <tr>
         <td>${r.tenant_name}</td>
         <td class="mono">${r.tx_ref}</td>
         <td>${badge(r.finding)}</td>
-        <td class="muted">${fmtTime(r.created_at)}</td>
-      </tr>`).join('');
+        <td style="color:var(--muted);font-size:.75rem">${fmtTime(r.created_at)}</td>
+      </tr>`).join('') : `<tr><td colspan="4" class="empty">No findings — all records valid ✓</td></tr>`;
   } catch (err) { showError('Findings: ' + err.message); }
+}
+
+async function loadBatchesOverview() {
+  try {
+    const rows = await fetchJSON('/api/batches');
+    const tbody = document.getElementById('batches-body-overview');
+    tbody.innerHTML = rows.length ? rows.slice(0,6).map(r => `
+      <tr>
+        <td>${r.tenant_name}</td>
+        <td>${shortHash(r.merkle_root)}</td>
+        <td>${r.block_number || '—'}</td>
+        <td style="color:var(--muted);font-size:.75rem">${fmtTime(r.anchored_at)}</td>
+      </tr>`).join('') : `<tr><td colspan="4" class="empty">No batches yet</td></tr>`;
+  } catch (err) { showError('Batches: ' + err.message); }
 }
 
 async function loadFindings() {
   try {
     const rows = await fetchJSON('/api/findings?limit=100');
     const tbody = document.getElementById('findings-body');
-    if (!rows.length) { tbody.innerHTML = '<tr><td colspan="6" class="muted" style="text-align:center">No findings</td></tr>'; return; }
-    tbody.innerHTML = rows.map(r => `
+    tbody.innerHTML = rows.length ? rows.map(r => `
       <tr>
         <td>${r.tenant_name}</td>
         <td class="mono">${r.tx_ref}</td>
         <td>${badge(r.finding)}</td>
-        <td class="mono" style="font-size:.75rem">${JSON.stringify(r.detail || {})}</td>
-        <td>${r.alerted ? '✅' : '⏳'}</td>
-        <td class="muted">${fmtTime(r.created_at)}</td>
-      </tr>`).join('');
+        <td style="font-size:.72rem;color:var(--muted)">${JSON.stringify(r.detail||{}).substring(0,60)}</td>
+        <td>${r.alerted ? '<span style="color:var(--green)">✓ Sent</span>' : '<span style="color:var(--muted)">Pending</span>'}</td>
+        <td style="color:var(--muted);font-size:.75rem">${fmtTime(r.created_at)}</td>
+      </tr>`).join('') : `<tr><td colspan="6" class="empty">No findings — system is clean</td></tr>`;
   } catch (err) { showError('Findings: ' + err.message); }
 }
 
@@ -278,16 +611,15 @@ async function loadBatches() {
   try {
     const rows = await fetchJSON('/api/batches');
     const tbody = document.getElementById('batches-body');
-    if (!rows.length) { tbody.innerHTML = '<tr><td colspan="6" class="muted" style="text-align:center">No batches yet</td></tr>'; return; }
-    tbody.innerHTML = rows.map(r => `
+    tbody.innerHTML = rows.length ? rows.map(r => `
       <tr>
         <td>${r.tenant_name}</td>
         <td>${shortHash(r.merkle_root)}</td>
-        <td>${r.seq_start} – ${r.seq_end}</td>
-        <td>${r.block_number || '—'}</td>
+        <td style="color:var(--muted)">${r.seq_start} → ${r.seq_end}</td>
+        <td style="color:var(--teal)">${r.block_number || '—'}</td>
         <td>${shortHash(r.tx_hash)}</td>
-        <td class="muted">${fmtTime(r.anchored_at)}</td>
-      </tr>`).join('');
+        <td style="color:var(--muted);font-size:.75rem">${fmtTime(r.anchored_at)}</td>
+      </tr>`).join('') : `<tr><td colspan="6" class="empty">No batches anchored yet</td></tr>`;
   } catch (err) { showError('Batches: ' + err.message); }
 }
 
@@ -295,17 +627,16 @@ async function loadReconciliation() {
   try {
     const rows = await fetchJSON('/api/reconciliation');
     const tbody = document.getElementById('reconciliation-body');
-    if (!rows.length) { tbody.innerHTML = '<tr><td colspan="7" class="muted" style="text-align:center">No runs yet</td></tr>'; return; }
-    tbody.innerHTML = rows.map(r => `
+    tbody.innerHTML = rows.length ? rows.map(r => `
       <tr>
         <td>${r.tenant_name}</td>
-        <td class="muted">${fmtTime(r.run_at)}</td>
+        <td style="color:var(--muted);font-size:.75rem">${fmtTime(r.run_at)}</td>
         <td>${r.total_checked}</td>
-        <td style="color:var(--success)">${r.valid_count}</td>
-        <td style="color:var(--danger)">${r.modified_count}</td>
-        <td style="color:var(--danger)">${r.deleted_count}</td>
-        <td style="color:var(--warning)">${r.unanchored_count}</td>
-      </tr>`).join('');
+        <td style="color:var(--green)">${r.valid_count}</td>
+        <td style="color:${r.modified_count>0?'var(--red)':'var(--muted)'}">${r.modified_count}</td>
+        <td style="color:${r.deleted_count>0?'var(--red)':'var(--muted)'}">${r.deleted_count}</td>
+        <td style="color:${r.unanchored_count>0?'var(--yellow)':'var(--muted)'}">${r.unanchored_count}</td>
+      </tr>`).join('') : `<tr><td colspan="7" class="empty">No reconciliation runs yet</td></tr>`;
   } catch (err) { showError('Reconciliation: ' + err.message); }
 }
 
@@ -313,15 +644,14 @@ async function loadAlerts() {
   try {
     const rows = await fetchJSON('/api/alerts');
     const tbody = document.getElementById('alerts-body');
-    if (!rows.length) { tbody.innerHTML = '<tr><td colspan="5" class="muted" style="text-align:center">No alerts</td></tr>'; return; }
-    tbody.innerHTML = rows.map(r => `
+    tbody.innerHTML = rows.length ? rows.map(r => `
       <tr>
         <td>${r.tenant_name}</td>
-        <td>${r.channel}</td>
+        <td><span style="color:var(--teal)">${r.channel}</span></td>
         <td>${badge(r.status)}</td>
-        <td style="font-size:.8rem;max-width:400px;white-space:pre-wrap">${r.message.substring(0, 120)}…</td>
-        <td class="muted">${fmtTime(r.sent_at)}</td>
-      </tr>`).join('');
+        <td style="font-size:.75rem;color:var(--muted);max-width:300px">${r.message.substring(0,80)}…</td>
+        <td style="color:var(--muted);font-size:.75rem">${fmtTime(r.sent_at)}</td>
+      </tr>`).join('') : `<tr><td colspan="5" class="empty">No alerts</td></tr>`;
   } catch (err) { showError('Alerts: ' + err.message); }
 }
 
@@ -329,25 +659,43 @@ async function loadTenants() {
   try {
     const rows = await fetchJSON('/api/tenants');
     const tbody = document.getElementById('tenants-body');
-    if (!rows.length) { tbody.innerHTML = '<tr><td colspan="4" class="muted" style="text-align:center">No tenants registered</td></tr>'; return; }
-    tbody.innerHTML = rows.map(r => `
+    tbody.innerHTML = rows.length ? rows.map(r => `
       <tr>
-        <td class="mono">${r.id}</td>
-        <td>${r.name}</td>
-        <td>${r.active ? '✅ Active' : '❌ Inactive'}</td>
-        <td class="muted">${fmtTime(r.created_at)}</td>
-      </tr>`).join('');
+        <td class="mono">${r.id.substring(0,8)}…</td>
+        <td style="color:var(--white);font-weight:600">${r.name}</td>
+        <td>${r.active ? '<span style="color:var(--green)">● Active</span>' : '<span style="color:var(--muted)">● Inactive</span>'}</td>
+        <td style="color:var(--muted);font-size:.75rem">${fmtTime(r.created_at)}</td>
+      </tr>`).join('') : `<tr><td colspan="4" class="empty">No tenants registered</td></tr>`;
   } catch (err) { showError('Tenants: ' + err.message); }
 }
 
 async function loadAll() {
-  await loadStats();
-  await loadFindingsOverview();
+  await Promise.all([loadStats(), loadFindingsOverview(), loadBatchesOverview()]);
 }
 
-// Auto-refresh every 30 seconds
+// Update chain status
+async function updateChainStatus() {
+  try {
+    const r = await fetch('http://localhost:8545', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ jsonrpc:'2.0', method:'eth_blockNumber', params:[], id:1 }),
+    });
+    const data = await r.json();
+    const block = parseInt(data.result, 16);
+    document.getElementById('chain-status').textContent = `⛓ Block #${block}`;
+    document.getElementById('chain-status').style.color = 'var(--teal)';
+  } catch {
+    document.getElementById('chain-status').textContent = '⛓ Chain offline';
+    document.getElementById('chain-status').style.color = 'var(--muted)';
+  }
+}
+
+// Init
 loadAll();
+updateChainStatus();
 setInterval(loadAll, 30000);
+setInterval(updateChainStatus, 5000);
 </script>
 </body>
 </html>
